@@ -67,7 +67,6 @@ def stockLastMonth(symbol):
 @app.route('/predict/<string:stock>')
 @cache.cached(timeout=300)
 def predict(stock):
-    ## nao esta funcionando
     if stock not in modelsDict:
         stocksList = ','.join(modelsDict)
         return f'{stock} não foi treinada, lista de ações treinadas -> {stocksList}', 404
