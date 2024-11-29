@@ -1,6 +1,7 @@
 import logging
 import os
 
+import keras.src.callbacks
 import yfinance as yf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,13 +10,34 @@ from sklearn.preprocessing import MinMaxScaler
 
 from Utils.utils import GetEnvStocks, GetEnvVariable, SaveEnvVariable
 from datetime import datetime, timedelta
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-from keras.layers import Dropout
-from keras.layers import Input
+from keras.api.models import Sequential
+from keras.api.layers import Dense
+from keras.api.layers import LSTM
+from keras.api.layers import Dropout
+from keras.api.layers import Input
 from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
 import matplotlib.dates as mdates
+import mlflow
+
+def RegiterMonitor(type, key, value, run_id):
+    if (type=='log'):
+        mlflow.log_param(key,value)
+    elif(type=='tag'):
+        mlflow.set_tag(key,value)
+    elif(type=='uri'):
+        mlflow.set_tracking_uri(uri=value)
+    elif(type=='metric'):
+        mlflow.log_metric(key=key,value=value,run_id=run_id)
+    elif(type=='set'):
+        return mlflow.set_experiment(value)
+    elif(type=='save'):
+        mlflow.keras.log_model(value,key)
+    elif(type=='table'):
+        mlflow.log_table(value,key)
+
+def GetRunId():
+    run = mlflow.active_run()
+    return run.info.run_id
 
 def GetTrainingAndTestSet(stocks):
     logger.info('Getting training and test set')
@@ -69,7 +91,7 @@ def CreateTestPredictions(dataset_train, dataset_test):
         X_test = np.array(X_test)
         X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
         predicted_stock_price = regressor.predict(X_test)
-        return sc.inverse_transform(predicted_stock_price)
+        return sc.inverse_transform(predicted_stock_price), X_test
 
 def CreatePlot(real_stock_price, predicted_stock_price, stock,dates):
     dates = pd.to_datetime(dates)
@@ -95,11 +117,16 @@ def EvaluateModel(real_stock_price, predicted_stock_price):
         # Calculando RMSE
         rmse = np.sqrt(mean_squared_error(real_stock_price, predicted_stock_price))
 
+        run_id = GetRunId()
+
         # Calculando MAPE
         mape = mean_absolute_percentage_error(real_stock_price, predicted_stock_price)
         logger.info(f'MAE: {mae}')
+        RegiterMonitor('metric', 'mae', mae, run_id)
         logger.info(f'RMSE: {rmse}')
+        RegiterMonitor('metric', 'rmse', rmse, run_id)
         logger.info(f'MAPE: {mape}')
+        RegiterMonitor('metric', 'mape', mape, run_id)
 
         with open(f'Models/{today}/{stock}_evaluation.txt', 'w') as f:
             f.write(f'MAE: {mae}\n')
@@ -107,59 +134,72 @@ def EvaluateModel(real_stock_price, predicted_stock_price):
             f.write(f'MAPE: {mape}\n')
 
 if __name__ == '__main__':
-    batch_size = int(GetEnvVariable('BATCH_SIZE'))
-    epochs = int(GetEnvVariable('EPOCHS'))
-    previous_days = int(GetEnvVariable('PREVIOUS_DAYS'))
-    days_to_predict = int(GetEnvVariable('DAYS_TO_PREDICT_TEST'))
+        batch_size = int(GetEnvVariable('BATCH_SIZE'))
+        epochs = int(GetEnvVariable('EPOCHS'))
+        previous_days = int(GetEnvVariable('PREVIOUS_DAYS'))
+        days_to_predict = int(GetEnvVariable('DAYS_TO_PREDICT_TEST'))
 
-    today = datetime.now().strftime('%Y%m%d')
-    if not os.path.exists(f'Models/{today}'):
-        os.mkdir(f'Models/{today}')
+        today = datetime.now().strftime('%Y%m%d')
+        if not os.path.exists(f'Models/{today}'):
+            os.mkdir(f'Models/{today}')
 
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s',
-                        filename='../Logs/app.log')
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s - %(levelname)s - %(message)s',
+                            filename='../Logs/app.log')
 
-    logger = logging.getLogger('train_model')
-    logger.info('Start training model')
-    sc = MinMaxScaler(feature_range=(0, 1))
-    stocks = GetEnvStocks()
-    datasets_train, datasets_test = GetTrainingAndTestSet(stocks)
+        logger = logging.getLogger('train_model')
+        logger.info('Start training model')
+        sc = MinMaxScaler(feature_range=(0, 1))
+        stocks = GetEnvStocks()
+        datasets_train, datasets_test = GetTrainingAndTestSet(stocks)
 
-    for stock in stocks:
-        logger.info(f'Training model for stock {stock}')
+        RegiterMonitor('uri', 'uri', 'http://127.0.0.1:8080', 0)
+        RegiterMonitor('set', 'set', f'MLET1-F4-LSTM', 0)
+        for stock in stocks:
+                logger.info(f'Training model for stock {stock}')
 
-        dataset_train = datasets_train['Close'][f'{stock}.SA'].values.reshape(-1, 1)
-        dataset_train = dataset_train[~np.isnan(dataset_train)].reshape(-1, 1)
+                dataset_train = datasets_train['Close'][f'{stock}.SA'].values.reshape(-1, 1)
+                dataset_train = dataset_train[~np.isnan(dataset_train)].reshape(-1, 1)
 
-        dataset_test = datasets_test['Close'][f'{stock}.SA'].values.reshape(-1, 1)
-        dataset_test = dataset_test[~np.isnan(dataset_test)]
+                dataset_test = datasets_test['Close'][f'{stock}.SA'].values.reshape(-1, 1)
+                dataset_test = dataset_test[~np.isnan(dataset_test)]
 
-        test_dates = datasets_test['Close'][f'{stock}.SA'].keys().to_list()
+                test_dates = datasets_test['Close'][f'{stock}.SA'].keys().to_list()
 
-        training_set_scaled = sc.fit_transform(dataset_train)
+                training_set_scaled = sc.fit_transform(dataset_train)
 
-        X_train, y_train = CreateXYtrain(training_set_scaled)
-        X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+                X_train, y_train = CreateXYtrain(training_set_scaled)
+                X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
 
-        regressor = CreateRegressor(X_train)
-        regressor.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+                regressor = CreateRegressor(X_train)
+                regressor.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
 
-        SaveModel(regressor, stock)
-        logger.info(f'Model for stock {stock} trained and saved')
+                SaveModel(regressor, stock)
+                logger.info(f'Model for stock {stock} trained and saved')
+                predictPrice, x_test = CreateTestPredictions(dataset_train, dataset_test)
+                pp = pd.DataFrame(predictPrice, columns=['predict_price'])
+                logger.info(f'Predictions for stock {stock} created')
 
-        predictPrice = CreateTestPredictions(dataset_train, dataset_test)
-        logger.info(f'Predictions for stock {stock} created')
+                with mlflow.start_run():
+                    run_id = GetRunId()
+                    RegiterMonitor('log', 'epochs', epochs, run_id)
+                    RegiterMonitor('log', 'previous_days', previous_days, run_id)
+                    RegiterMonitor('log', 'days_to_predict', days_to_predict, run_id)
+                    RegiterMonitor('log', 'batch_size', batch_size, run_id)
+                    runtime = f"{stock}_" + datetime.now().strftime("%Y%m%d_%H%MS")
+                    RegiterMonitor('log', 'runtime', runtime, run_id)
+                    RegiterMonitor('tag', 'Training Info', f'{stock}', run_id)
+                    RegiterMonitor('table', 'predictPrice.json', pp, run_id)
+                    RegiterMonitor('save', 'regressor', regressor, run_id)
 
-        CreatePlot(dataset_test, predictPrice, stock, test_dates)
-        logger.info(f'Plot for stock {stock} created')
+                    CreatePlot(dataset_test, predictPrice, stock, test_dates)
+                    logger.info(f'Plot for stock {stock} created')
 
-        EvaluateModel(dataset_test, predictPrice)
-        logger.info(f'Model for stock {stock} evaluated')
+                    EvaluateModel(dataset_test, predictPrice)
+                    logger.info(f'Model for stock {stock} evaluated')
 
-        logger.info(f'Training model for stock {stock} finished')
-        logger.info('##################################################')
-    logger.info('End training model')
-    SaveEnvVariable('LAST_TRAINING', today)
+                    logger.info(f'Training model for stock {stock} finished')
+                    logger.info('##################################################')
 
-
+        logger.info('End training model')
+        SaveEnvVariable('LAST_TRAINING', today)
