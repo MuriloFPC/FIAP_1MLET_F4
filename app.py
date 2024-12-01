@@ -1,14 +1,15 @@
 import os
-import json
+from datetime import datetime, timedelta
+
+from flask import Flask, jsonify
 from flask_caching import Cache
 import numpy as np
-from flask import Flask, request, jsonify
 import yfinance as yf
-from keras.src.saving import load_model
-import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from Utils.utils import GetEnvStocks, GetEnvVariable
-from datetime import datetime, timedelta
+from tensorflow.keras.models import load_model
+
+from Utils.utils import GetEnvVariable
+
 app = Flask(__name__)
 config = {
     "DEBUG": True,          # some Flask specific configs
@@ -17,6 +18,7 @@ config = {
 }
 app.config.from_mapping(config)
 cache = Cache(app)
+
 
 @app.route('/')
 def hello_world():  # put application's code here
@@ -40,12 +42,14 @@ def stockLastMonth(symbol):
 
         # Verifica se há dados retornados
         if history.empty:
-            return jsonify({'error': f'Nenhum dado encontrado para {symbol} no último mês.'}), 404
+            return jsonify(f'{"Nenhum dado encontrado para \
+                               {symbol} no último mês."}')
 
         # Calcula o valor de mercado diário
         market_cap_data = []
         for date, row in history.iterrows():
-            close_price = round(row['Close'], 2)  # Arredonda o preço de fechamento
+            # Arredonda o preço de fechamento
+            close_price = round(row['Close'], 2)
             market_cap_data.append({
                 'date': date.strftime('%d/%m/%Y'),
                 'close_price': close_price,
@@ -62,14 +66,17 @@ def stockLastMonth(symbol):
         return jsonify(response), 200
 
     except Exception as e:
-        return jsonify({'error': 'Erro ao processar os dados.', 'details': str(e)}), 500
+        return jsonify({'error': 'Erro ao processar os dados.',
+                        'details': str(e)}), 500
+
 
 @app.route('/predict/<string:stock>')
 @cache.cached(timeout=300)
 def predict(stock):
     if stock not in modelsDict:
         stocksList = ','.join(modelsDict)
-        return f'{stock} não foi treinada, lista de ações treinadas -> {stocksList}', 404
+        return f'{stock} não foi treinada, lista de ações treinadas ->\
+              {stocksList}', 404
 
     stock_values = yf.download(f'{stock}.SA', period='6mo')
     stock_values = stock_values['Close'][f'{stock}.SA'].values.reshape(-1, 1)
@@ -86,8 +93,10 @@ def predict(stock):
     X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
     predicted_stock_price = model.predict(X_test)
 
-    predicted_stock_price_list = sc.inverse_transform(predicted_stock_price).tolist()
+    predicted_stock_price_list = sc.inverse_transform(
+        predicted_stock_price).tolist()
     return jsonify(predicted_stock_price_list), 200
+
 
 def LoadModel():
     lastTrainingDate = GetEnvVariable('LAST_TRAINING')
@@ -102,6 +111,7 @@ def LoadModel():
         print(f'Model for stock {stock} loaded')
 
     return modelsDict
+
 
 sc = MinMaxScaler(feature_range=(0, 1))
 modelsDict = LoadModel()
