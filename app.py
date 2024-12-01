@@ -71,7 +71,7 @@ def predict(stock):
         stocksList = ','.join(modelsDict)
         return f'{stock} não foi treinada, lista de ações treinadas -> {stocksList}', 404
 
-    stock_values = yf.download(f'{stock}.SA', period='6mo')
+    stock_values = yf.download(f'{stock}.SA', period='max')
     stock_values = stock_values['Close'][f'{stock}.SA'].values.reshape(-1, 1)
     stock_values = stock_values[~np.isnan(stock_values)].reshape(-1, 1)
     model = modelsDict[stock]

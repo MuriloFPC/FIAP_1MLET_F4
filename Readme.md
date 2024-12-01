@@ -16,6 +16,12 @@ Para executar a API, deve-se executar os seguintes passos:
 1. Clonar o repositório;
 2. Instalar as dependências com `pip install -r requirements.txt`.
 
+## Treinamento
+
+Para treinar o modelo, deve-se executar o seguinte comando:
+
+- `python train.py`
+
 ## Uso
 
 Para executar a API, deve-se executar o seguinte comando:
@@ -23,12 +29,22 @@ Para executar a API, deve-se executar o seguinte comando:
 - `python mlflow ui --port 8080`
 - `python app`
 
+## Endpoints
+
+### /stockLastMonth/{Codigo da Ação}
+
+Retorna o preço de fechamento da ação nos últimos 30 dias.
+
+### /Predict/{Codigo da Ação}
+
+Retorna a previsão do preço de fechamento da ação para os próximos 15 dias.
+
 ## Participantes do Projeto
 
 Nome: Barbara Barreto
 Email: barbaraabb19@gmail.com
 
-Nome: Murilo Fischer de Paula Conceicao
+Nome: Murilo Fischer de Paula Conceição
 Email: murilofpc@gmail.com
 
 Nome: Sanderlan Martins da Silva
