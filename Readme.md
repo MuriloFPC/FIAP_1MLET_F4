@@ -16,6 +16,8 @@ Para executar a API, deve-se executar os seguintes passos:
 1. Clonar o repositório;
 2. Instalar as dependências com `pip install -r requirements.txt`.
 
+OBS: Devi a limitações do TensorFlow, a versão do Python deve ser 3.11
+
 ## Treinamento
 
 Para treinar o modelo, deve-se executar o seguinte comando:
