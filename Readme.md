@@ -32,6 +32,16 @@ mlflow ui
 Por padrão, ele estará acessível em http://127.0.0.1:5000.
 
 Verifique se a variável de ambiente MLFLOW_TRACKING_URI está configurada para o servidor:
+=======
+OBS: Devi a limitações do TensorFlow, a versão do Python deve ser 3.11
+
+## Treinamento
+
+Para treinar o modelo, deve-se executar o seguinte comando:
+
+- `python train.py`
+
+## Uso
 
 ```bash
 export MLFLOW_TRACKING_URI=http://127.0.0.1:5000
@@ -83,11 +93,23 @@ Coleção do Postman
 Adicionalmente, existe uma collection do Postman já configurada no repositório, que contém as requisições para interagir com o servidor Flask. Você pode importá-la diretamente para o Postman e usá-la para testar o modelo sem precisar configurar manualmente a requisição.
 
 ## 👩‍💻 Autores
+=======
+## Endpoints
+
+### /stockLastMonth/{Codigo da Ação}
+
+Retorna o preço de fechamento da ação nos últimos 30 dias.
+
+### /Predict/{Codigo da Ação}
+
+Retorna a previsão do preço de fechamento da ação para os próximos 15 dias.
+
+## Participantes do Projeto
 
 Nome: Barbara Barreto
 Email: barbaraabb19@gmail.com
 
-Nome: Murilo Fischer de Paula Conceicao
+Nome: Murilo Fischer de Paula Conceição
 Email: murilofpc@gmail.com
 
 Nome: Sanderlan Martins da Silva
