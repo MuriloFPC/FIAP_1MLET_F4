@@ -1,7 +1,11 @@
 import sys
 import os
 from datetime import datetime, timedelta
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from Utils.utils import (GetEnvStocks,
+                         GetEnvVariable,
+                         SaveEnvVariable)
 import logging
 import yfinance as yf
 import numpy as np
@@ -13,15 +17,9 @@ from sklearn.metrics import (mean_absolute_error,
                              mean_squared_error,
                              mean_absolute_percentage_error)
 import mlflow
-
-from Utils.utils import (GetEnvStocks,
-                         GetEnvVariable,
-                         SaveEnvVariable)
-
 from keras.api.models import Sequential
 from keras.api.layers import Dense, LSTM, Dropout, Input
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 def RegiterMonitor(type, key, value, run_id):
@@ -182,7 +180,7 @@ if __name__ == '__main__':
     datasets_train, datasets_test = GetTrainingAndTestSet(stocks)
 
     try:
-        RegiterMonitor('uri', 'uri', 'http://127.0.0.1:8080', 0)
+        RegiterMonitor('uri', 'uri', 'http://127.0.0.1:5000', 0)
         RegiterMonitor('set', 'set', f'{"MLET1-F4-LSTM"}', 0)
     except mlflow.exceptions.MlflowException as e:
         print(f"Erro ao conectar ao servidor MLflow: {e}")

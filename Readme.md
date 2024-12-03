@@ -37,12 +37,6 @@ OBS: Devi a limitações do TensorFlow, a versão do Python deve ser 3.11
 
 ## Treinamento
 
-Para treinar o modelo, deve-se executar o seguinte comando:
-
-- `python train.py`
-
-## Uso
-
 ```bash
 export MLFLOW_TRACKING_URI=http://127.0.0.1:5000
 ```
@@ -59,6 +53,23 @@ Execute o código de treinamento:
 ```bash
 python ML_Models/train.py
 ```
+
+## Consumir o modelo vai API
+
+```bash
+python app.py
+```
+## Endpoints
+
+### /stockLastMonth/{Codigo da Ação}
+
+Retorna o preço de fechamento da ação nos últimos 30 dias.
+
+### /Predict/{Codigo da Ação}
+
+Retorna a previsão do preço de fechamento da ação para os próximos 15 dias.
+
+
 
 ## Principais Dependências
 Python 3.10+
@@ -94,15 +105,6 @@ Adicionalmente, existe uma collection do Postman já configurada no repositório
 
 ## 👩‍💻 Autores
 =======
-## Endpoints
-
-### /stockLastMonth/{Codigo da Ação}
-
-Retorna o preço de fechamento da ação nos últimos 30 dias.
-
-### /Predict/{Codigo da Ação}
-
-Retorna a previsão do preço de fechamento da ação para os próximos 15 dias.
 
 ## Participantes do Projeto
 

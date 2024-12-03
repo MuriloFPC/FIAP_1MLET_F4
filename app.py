@@ -42,8 +42,7 @@ def stockLastMonth(symbol):
 
         # Verifica se há dados retornados
         if history.empty:
-            return jsonify(f'{"Nenhum dado encontrado para \
-                               {symbol} no último mês."}')
+            return jsonify(f'{"Nenhum dado encontrado para {symbol} no último mês."}')
 
         # Calcula o valor de mercado diário
         market_cap_data = []
@@ -118,4 +117,4 @@ modelsDict = LoadModel()
 previous_days = int(GetEnvVariable('PREVIOUS_DAYS'))
 days_to_predict = int(GetEnvVariable('DAYS_TO_PREDICT'))
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5001)
